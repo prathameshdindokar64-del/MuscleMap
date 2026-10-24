@@ -1,6 +1,7 @@
 import { animated, useSpring } from '@react-spring/web'
 import { useCallback, useEffect, useState } from 'react'
 import { analyzePain, getHistory } from '../../api/painApi'
+import { useAuth } from '../../context/AuthContext'
 import { getOrCreateDeviceId } from '../../utils/deviceId'
 import type { AnalyzePainRequest, AnalyzePainResponse, HistoryEntry } from '../../types'
 import { HistoryAccordion } from './HistoryAccordion'
@@ -19,6 +20,7 @@ export function AssessmentPanel({
   onClose,
   onAssessmentComplete,
   onResultChange,
+  onSelectRegion,
 }: {
   regionId: string | null
   regionName: string | null
@@ -27,7 +29,9 @@ export function AssessmentPanel({
   onClose: () => void
   onAssessmentComplete?: () => void
   onResultChange?: (result: AnalyzePainResponse | null) => void
+  onSelectRegion?: (regionId: string) => void
 }) {
+  const { user } = useAuth()
   const [result, setResult] = useState<AnalyzePainResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState<PanelTab>('assessment')
@@ -40,7 +44,7 @@ export function AssessmentPanel({
 
   useEffect(() => {
     refreshHistory()
-  }, [refreshHistory])
+  }, [refreshHistory, user])
 
   useEffect(() => {
     onResultChange?.(result)
@@ -60,12 +64,17 @@ export function AssessmentPanel({
       onAssessmentComplete?.()
     } catch {
       setResult({
+        sessionId: 'fallback',
+        createdAt: new Date().toISOString(),
         regionName: regionName || regionId || 'Selected Region',
         muscles: ['Primary Stabilizers'],
         exercises: [{ title: 'Gentle Mobility', instructions: 'Perform low-range movement for 5-8 minutes.', tags: ['mobility', 'warm-up'] }],
         aiInsight: 'Unable to reach the AI analysis engine. Showing generic fallback guidance.',
         recoveryTips: ['Rest the affected area', 'Apply ice or heat as appropriate', 'Avoid painful movements'],
         riskLevel: 'moderate',
+        redFlagReasons: [],
+        riskSource: 'rules',
+        mlConfidence: 0,
         warningText: 'Unable to reach API, fallback estimate shown.',
         disclaimerText:
           'This information is for educational purposes only and is not a medical diagnosis. If symptoms are severe or worsening, consult a qualified healthcare professional immediately.',
@@ -131,7 +140,14 @@ export function AssessmentPanel({
         <>
           {loading && <div className="mb-3 h-5 w-5 animate-spin rounded-full border-2 border-teal-500 border-t-transparent" />}
           {!result && regionId && (
-            <Questionnaire region={regionId} regionLabel={displayName} deviceId={deviceId} isDarkTheme={isDarkTheme} onSubmit={handleSubmit} />
+            <Questionnaire
+              region={regionId}
+              regionLabel={displayName}
+              deviceId={deviceId}
+              isDarkTheme={isDarkTheme}
+              onSubmit={handleSubmit}
+              onRegionChange={onSelectRegion}
+            />
           )}
           {result && regionId && (
             <Results result={result} regionId={regionId} isDarkTheme={isDarkTheme} onReset={() => setResult(null)} />

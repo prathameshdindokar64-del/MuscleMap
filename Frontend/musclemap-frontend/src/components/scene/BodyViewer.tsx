@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { Suspense } from 'react'
 import type { AnalyzePainResponse, RegionInfo } from '../../types'
 import { AnatomyModel } from './AnatomyModel'
+import { CameraPresetController, type ViewPreset } from './CameraPresetController'
 import { CameraRig } from './CameraRig'
 import { ParticleField } from './ParticleField'
 
@@ -38,6 +39,9 @@ export function BodyViewer({
   assessmentRegionId,
   heatmapEnabled,
   regionHeatmapCounts,
+  viewPreset,
+  onPresetComplete,
+  paused = false,
 }: {
   theme: 'dark' | 'light'
   onRegionClick: (info: RegionInfo) => void
@@ -45,9 +49,13 @@ export function BodyViewer({
   assessmentRegionId: string | null
   heatmapEnabled: boolean
   regionHeatmapCounts: Record<string, number>
+  viewPreset?: ViewPreset | null
+  onPresetComplete?: () => void
+  paused?: boolean
 }) {
   return (
     <Canvas
+      frameloop={paused ? 'never' : 'always'}
       shadows
       camera={{ fov: 42, position: [0, 0.85, 2.6], near: 0.01, far: 50 }}
       style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', zIndex: 0 }}
@@ -57,6 +65,7 @@ export function BodyViewer({
       <ParticleField theme={theme} />
       <Lights theme={theme} />
       <CameraRig />
+      <CameraPresetController preset={viewPreset ?? null} onComplete={onPresetComplete} />
       <Suspense fallback={null}>
         <AnatomyModel
           onRegionClick={onRegionClick}

@@ -1,79 +1,191 @@
 /**
  * BodyHeatmap.tsx
- * Applies warm emissive tints to meshes based on how often each region appears in assessment history.
+ * Visualizes pain and tension frequency directly onto the 3D body model.
+ * Uses subtle localized point lights and soft glow halos — designed to be
+ * informative without overwhelming the user.
  */
-import { useLayoutEffect, type RefObject } from 'react'
+import { Html } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
 import * as THREE from 'three'
-import { detectRegionFromPoint } from '../../utils/regionDetection'
+import { REGION_COORDINATES, REGION_DISPLAY_NAMES } from '../../constants/regions'
+import type { RegionInfo } from '../../types'
 
-function heatStyleForCount(count: number): { color: string; intensity: number } | null {
-  if (count <= 0) return null
-  if (count === 1) return { color: '#1a0500', intensity: 0.15 }
-  if (count <= 3) return { color: '#2a0800', intensity: 0.25 }
-  if (count <= 5) return { color: '#3a1000', intensity: 0.35 }
-  return { color: '#4a1500', intensity: 0.5 }
+export interface HeatSpot {
+  region: string
+  name: string
+  count: number
+  color: string
+  glowColor: string
+  intensity: number
+  position: [number, number, number]
+  levelName: 'Mild' | 'Moderate' | 'High'
 }
 
-/**
- * Traverses the anatomy group and applies or clears heatmap emissive overlays.
- */
-export function useBodyHeatmap(
-  groupRef: RefObject<THREE.Group | null>,
-  enabled: boolean,
-  regionCounts: Record<string, number>,
-  theme: 'dark' | 'light',
-) {
-  useLayoutEffect(() => {
-    let cancelled = false
+/** Maximum light intensity for the hottest spots (keeps things subtle). */
+const MAX_LIGHT_INTENSITY = 1.2
 
-    const apply = () => {
-      if (cancelled) return
-      const root = groupRef.current
-      if (!root) {
-        requestAnimationFrame(apply)
-        return
+/** Determines thermal styling based on occurrence count. */
+export function getThermalStyle(count: number): {
+  color: string
+  glowColor: string
+  intensity: number
+  levelName: 'Mild' | 'Moderate' | 'High'
+} {
+  if (count <= 1) {
+    return {
+      color: '#34d399',      // Soft emerald
+      glowColor: '#6ee7b7',
+      intensity: 0.6,
+      levelName: 'Mild',
+    }
+  }
+  if (count <= 3) {
+    return {
+      color: '#fbbf24',      // Muted amber
+      glowColor: '#fcd34d',
+      intensity: 0.9,
+      levelName: 'Moderate',
+    }
+  }
+  return {
+    color: '#f87171',        // Soft red (not harsh crimson)
+    glowColor: '#fca5a5',
+    intensity: MAX_LIGHT_INTENSITY,
+    levelName: 'High',
+  }
+}
+
+/** Individual 3D thermal hotspot with gentle point lighting and a soft halo. */
+function HotspotNode({
+  spot,
+  theme,
+  onSelectRegion,
+}: {
+  spot: HeatSpot
+  theme: 'dark' | 'light'
+  onSelectRegion?: (info: RegionInfo) => void
+}) {
+  const haloRef = useRef<THREE.Mesh>(null)
+
+  // Gentle, slow breathing animation — no pulsing radar ring
+  useFrame(({ clock }) => {
+    if (haloRef.current) {
+      const t = clock.elapsedTime
+      const scale = 1 + Math.sin(t * 1.2 + spot.position[1]) * 0.06
+      haloRef.current.scale.set(scale, scale, scale)
+    }
+  })
+
+  const [x, y, z] = spot.position
+  const lightDistance = 0.4
+  const lightIntensity = theme === 'dark' ? spot.intensity * 1.0 : spot.intensity * 0.7
+
+  return (
+    <group position={[x, y, z]}>
+      {/* Subtle thermal point light — gentle illumination on body contours */}
+      <pointLight
+        color={spot.color}
+        intensity={lightIntensity}
+        distance={lightDistance}
+        decay={2}
+      />
+
+      {/* Small core dot */}
+      <mesh>
+        <sphereGeometry args={[0.016, 12, 12]} />
+        <meshBasicMaterial color={spot.color} />
+      </mesh>
+
+      {/* Soft, translucent halo — no additive blending for subtlety */}
+      <mesh ref={haloRef}>
+        <sphereGeometry args={[0.04, 12, 12]} />
+        <meshBasicMaterial
+          color={spot.glowColor}
+          transparent
+          opacity={theme === 'dark' ? 0.18 : 0.12}
+          blending={THREE.NormalBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Minimal floating label — compact and translucent */}
+      <Html
+        position={[0, 0.065, 0]}
+        center
+        style={{ pointerEvents: 'auto', userSelect: 'none' }}
+        zIndexRange={[30, 0]}
+      >
+        <button
+          type="button"
+          onClick={() =>
+            onSelectRegion?.({
+              region: spot.region,
+              name: spot.name,
+            })
+          }
+          className="flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium shadow-sm transition-transform hover:scale-105"
+          style={{
+            background: 'rgba(15, 23, 42, 0.65)',
+            border: `1px solid ${spot.color}44`,
+            color: '#e2e8f0',
+            backdropFilter: 'blur(6px)',
+            whiteSpace: 'nowrap',
+          }}
+          title={`Click to assess ${spot.name}`}
+        >
+          <span
+            className="inline-block h-1.5 w-1.5 rounded-full"
+            style={{ background: spot.color }}
+          />
+          <span>{spot.name}</span>
+        </button>
+      </Html>
+    </group>
+  )
+}
+
+/** Renders all active thermal hotspots across the anatomical model. */
+export function BodyHeatmap({
+  enabled,
+  counts,
+  theme,
+  onSelectRegion,
+}: {
+  enabled: boolean
+  counts: Record<string, number>
+  theme: 'dark' | 'light'
+  onSelectRegion?: (info: RegionInfo) => void
+}) {
+  if (!enabled) return null
+
+  const activeSpots: HeatSpot[] = Object.entries(counts)
+    .filter(([_, count]) => count > 0)
+    .map(([region, count]) => {
+      const position = REGION_COORDINATES[region] ?? [0, 1.0, 0]
+      const name = REGION_DISPLAY_NAMES[region] ?? region
+      const style = getThermalStyle(count)
+      return {
+        region,
+        name,
+        count,
+        position,
+        ...style,
       }
-
-    const meshes: THREE.Mesh[] = []
-    root.traverse((child) => {
-      if (child instanceof THREE.Mesh) meshes.push(child)
     })
 
-    for (const mesh of meshes) {
-      const mat = mesh.material
-      if (!mat || !('emissive' in mat)) continue
-      const standard = mat as THREE.MeshStandardMaterial
+  if (activeSpots.length === 0) return null
 
-      if (!mesh.userData._heatmapBackup) {
-        mesh.userData._heatmapBackup = {
-          emissive: standard.emissive.clone(),
-          emissiveIntensity: standard.emissiveIntensity,
-        }
-      }
-
-      const box = new THREE.Box3().setFromObject(mesh)
-      const center = new THREE.Vector3()
-      box.getCenter(center)
-      const regionInfo = detectRegionFromPoint(center)
-      const regionId = regionInfo?.region
-      const count = regionId ? regionCounts[regionId] ?? 0 : 0
-      const heat = enabled ? heatStyleForCount(count) : null
-      const backup = mesh.userData._heatmapBackup as { emissive: THREE.Color; emissiveIntensity: number }
-
-      if (heat) {
-        const heatColor = new THREE.Color(heat.color)
-        standard.emissive.copy(heatColor)
-        standard.emissiveIntensity = heat.intensity * (theme === 'light' ? 0.85 : 1)
-      } else {
-        standard.emissive.copy(backup.emissive)
-        standard.emissiveIntensity = backup.emissiveIntensity
-      }
-    }
-    }
-
-    apply()
-    return () => {
-      cancelled = true
-    }
-  }, [groupRef, enabled, regionCounts, theme])
+  return (
+    <group>
+      {activeSpots.map((spot) => (
+        <HotspotNode
+          key={spot.region}
+          spot={spot}
+          theme={theme}
+          onSelectRegion={onSelectRegion}
+        />
+      ))}
+    </group>
+  )
 }

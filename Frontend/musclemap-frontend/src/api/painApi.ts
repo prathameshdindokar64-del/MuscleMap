@@ -11,11 +11,23 @@ import type {
   AnalyzePainRequest,
   AnalyzePainResponse,
   HistoryEntry,
+  SessionResponse,
+  ExerciseVideoResponse,
+  AcupressureResponse,
   Region,
   ApiError,
   User,
   AuthResponse,
 } from '../types'
+
+/** Attach JWT token from localStorage if user is authenticated */
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('musclemap-auth-token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
 
 /**
  * Creates a typed error message from an Axios error.
@@ -51,10 +63,9 @@ export async function analyzePain(
 }
 
 /**
- * Fetches the last 10 pain assessments for a device.
+ * Fetches the last 10 pain assessments for a device (legacy support).
  * @param deviceId - The UUID stored in localStorage for this device
  * @returns Array of history entries, newest first
- * @throws Error with a human-readable message if the request fails
  */
 export async function getHistory(deviceId: string): Promise<HistoryEntry[]> {
   try {
@@ -69,9 +80,100 @@ export async function getHistory(deviceId: string): Promise<HistoryEntry[]> {
 }
 
 /**
+ * v2: Fetches paginated sessions history with total count.
+ */
+export async function getSessions(
+  deviceId: string,
+  limit: number = 20,
+  offset: number = 0
+): Promise<{ items: HistoryEntry[]; total: number }> {
+  try {
+    const response = await axios.get<HistoryEntry[]>(
+      `${API_BASE_URL}/api/history`,
+      { params: { deviceId, limit, offset } }
+    )
+    const totalHeader = response.headers['x-total-count']
+    const total = totalHeader ? parseInt(totalHeader, 10) : response.data.length
+    return {
+      items: response.data,
+      total,
+    }
+  } catch (error) {
+    throw new Error(extractErrorMessage(error))
+  }
+}
+
+/**
+ * v2: Fetches full session details by ID.
+ */
+export async function getSession(
+  id: string,
+  deviceId?: string
+): Promise<SessionResponse> {
+  try {
+    const response = await axios.get<SessionResponse>(
+      `${API_BASE_URL}/api/sessions/${id}`,
+      { params: { deviceId } }
+    )
+    return response.data
+  } catch (error) {
+    throw new Error(extractErrorMessage(error))
+  }
+}
+
+/**
+ * v2: Deletes a session by ID.
+ */
+export async function deleteSession(
+  id: string,
+  deviceId?: string
+): Promise<{ success: boolean }> {
+  try {
+    const response = await axios.delete<{ success: boolean; message: string }>(
+      `${API_BASE_URL}/api/sessions/${id}`,
+      { params: { deviceId } }
+    )
+    return { success: response.data.success }
+  } catch (error) {
+    throw new Error(extractErrorMessage(error))
+  }
+}
+
+/**
+ * v2: Fetches YouTube video for an exercise.
+ */
+export async function getExerciseVideo(
+  exerciseId: string
+): Promise<ExerciseVideoResponse> {
+  try {
+    const response = await axios.get<ExerciseVideoResponse>(
+      `${API_BASE_URL}/api/exercises/${exerciseId}/video`
+    )
+    return response.data
+  } catch (error) {
+    throw new Error(extractErrorMessage(error))
+  }
+}
+
+/**
+ * v2: Fetches acupressure points for a specific region.
+ */
+export async function getAcupressure(
+  regionId: string
+): Promise<AcupressureResponse[]> {
+  try {
+    const response = await axios.get<AcupressureResponse[]>(
+      `${API_BASE_URL}/api/regions/${regionId}/acupressure`
+    )
+    return response.data
+  } catch (error) {
+    throw new Error(extractErrorMessage(error))
+  }
+}
+
+/**
  * Fetches all supported body regions from the backend.
  * @returns Array of region objects with id, name, and description
- * @throws Error with a human-readable message if the request fails
  */
 export async function getRegions(): Promise<Region[]> {
   try {

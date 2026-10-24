@@ -1,0 +1,21 @@
+{
+  "name": "musclemap-v2-root",
+  "version": "2.0.0",
+  "private": true,
+  "description": "MuscleMap v2 Root Orchestrator - Educational Musculoskeletal Self-Care",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix Backeknd",
+    "dev:frontend": "npm run dev --prefix Frontend/musclemap-frontend",
+    "dev:ml": "ml-service\\venv\\Scripts\\python ml-service/app.py",
+    "dev": "concurrently -p \"[{name}]\" -n \"BACKEND,FRONTEND,ML\" -c \"cyan.bold,magenta.bold,yellow.bold\" \"npm run dev:backend\" \"npm run dev:frontend\" \"npm run dev:ml\"",
+    "build:backend": "npm run build --prefix Backeknd",
+    "build:frontend": "npm run build --prefix Frontend/musclemap-frontend",
+    "warm-videos": "npm run warm-videos --prefix Backeknd",
+    "test:backend": "npm run test --prefix Backeknd",
+    "test:frontend": "npm run test --prefix Frontend/musclemap-frontend",
+    "test": "npm run test:backend && npm run test:frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

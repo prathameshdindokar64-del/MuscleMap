@@ -10,11 +10,12 @@
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { GEMINI_API_KEY } from '../config';
-import { calculateRisk } from './riskCalculator';
+import { calculateRisk, RiskResult } from './riskCalculator';
+import { selectExercises } from './exerciseSelector';
 import { REGION_MUSCLES } from '../constants/regions';
 import { WARNING_TEXT, DISCLAIMER_TEXT } from '../constants/messages';
 import { ACUPRESSURE_POINTS } from '../constants/acupressure';
-import type { AnalyzeInput, AnalyzeOutput, RiskLevel } from '../types';
+import type { AnalyzeInput, AnalyzeOutput, AcupressureResponse, ExerciseResponse } from '../types';
 import Database from 'better-sqlite3';
 
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
@@ -62,6 +63,32 @@ Rules:
 }
 
 /**
+ * Helper to fetch acupressure points from DB or fallback constants.
+ */
+function getAcupressurePoints(regionId: string, db: Database.Database): AcupressureResponse[] {
+  try {
+    const rows = db.prepare(
+      'SELECT name, location, how_to FROM acupressure_points WHERE region_id = ?'
+    ).all(regionId) as { name: string; location: string; how_to: string }[];
+    if (rows && rows.length > 0) {
+      return rows.map((r) => ({
+        name: r.name,
+        location: r.location,
+        howTo: r.how_to,
+      }));
+    }
+  } catch {
+    // fallback if table is not yet created
+  }
+
+  return (ACUPRESSURE_POINTS[regionId] ?? []).map((p) => ({
+    name: p.name,
+    location: p.description,
+    howTo: p.technique,
+  }));
+}
+
+/**
  * Analyzes pain input using Google Gemini AI.
  * Falls back to rule-based analysis if AI call fails.
  */
@@ -71,37 +98,76 @@ export async function analyzeWithGemini(
   db: Database.Database
 ): Promise<AnalyzeOutput> {
   const muscles = REGION_MUSCLES[input.region] ?? ['Consult a professional for assessment'];
-  const riskLevel = calculateRisk(input);
-  const warningText = WARNING_TEXT[riskLevel];
-  const acupressurePoints = ACUPRESSURE_POINTS[input.region] ?? [];
+  const riskResult = calculateRisk(input);
+  const warningText = WARNING_TEXT[riskResult.riskLevel];
+  const acupressurePoints = getAcupressurePoints(input.region, db);
+
+  if (!GEMINI_API_KEY || GEMINI_API_KEY.includes('AIzaSyDzyqciU0BZxWIknHHa8hGXv7y4k9pOjAs') || GEMINI_API_KEY === 'your_gemini_api_key_here') {
+    return fallbackAnalysis(input, regionName, muscles, riskResult, acupressurePoints, db);
+  }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = buildPrompt(input, regionName, muscles);
+    let resultText = '';
+    const candidateModels = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro'];
+    let lastError: any = null;
 
-    const result = await model.generateContent(prompt);
-    const responseText = result.response.text().trim();
+    for (const modelName of candidateModels) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const prompt = buildPrompt(input, regionName, muscles);
+        const result = await model.generateContent(prompt);
+        resultText = result.response.text().trim();
+        if (resultText) break;
+      } catch (err: any) {
+        lastError = err;
+        if (err?.message?.includes('leaked') || err?.message?.includes('PERMISSION_DENIED')) {
+          // Key revoked by provider, no point trying other models with same key
+          break;
+        }
+      }
+    }
+
+    if (!resultText) {
+      throw lastError || new Error('No response from Gemini models');
+    }
 
     // Strip any accidental markdown code fences
-    const cleanJson = responseText.replace(/```json|```/g, '').trim();
+    const cleanJson = resultText.replace(/```json|```/g, '').trim();
     const parsed = JSON.parse(cleanJson);
 
+    const exercises: ExerciseResponse[] = (parsed.exercises || []).map((ex: any, idx: number) => ({
+      id: `gemini-${idx}-${Date.now()}`,
+      title: ex.title || 'Exercise',
+      instructions: ex.instructions || '',
+      tags: Array.isArray(ex.tags) ? ex.tags : ['Stretch'],
+      videoSearchQuery: `${ex.title || 'Exercise'} how to physiotherapy beginner`,
+      guidedModeAvailable: true,
+    }));
+
     return {
+      sessionId: '',
+      createdAt: new Date().toISOString(),
       regionName,
       muscles,
-      exercises: parsed.exercises || [],
+      exercises,
       aiInsight: parsed.aiInsight || '',
       recoveryTips: parsed.recoveryTips || [],
-      riskLevel,
+      riskLevel: riskResult.riskLevel,
+      redFlagReasons: riskResult.redFlagReasons,
+      riskSource: 'rules',
+      mlConfidence: 0,
       warningText,
       disclaimerText: DISCLAIMER_TEXT,
       acupressurePoints,
-      generatedBy: 'gemini-1.5-flash',
+      generatedBy: 'Gemini AI',
     };
-  } catch (error) {
-    // Fallback to database exercises if Gemini fails
-    console.error('Gemini analysis failed, falling back to rule-based:', error);
-    return fallbackAnalysis(input, regionName, muscles, riskLevel, acupressurePoints, db);
+  } catch (error: any) {
+    if (error?.message?.includes('leaked') || error?.message?.includes('PERMISSION_DENIED')) {
+      console.warn('[Gemini AI] The GEMINI_API_KEY in Backeknd/.env was revoked by Google ("reported as leaked"). Seamlessly operating with Clinical Knowledgebase rules.');
+    } else {
+      console.warn('[Gemini AI] Offline or unavailable, operating with Clinical Knowledgebase rules:', error?.message || error);
+    }
+    return fallbackAnalysis(input, regionName, muscles, riskResult, acupressurePoints, db);
   }
 }
 
@@ -113,22 +179,15 @@ function fallbackAnalysis(
   input: AnalyzeInput,
   regionName: string,
   muscles: string[],
-  riskLevel: RiskLevel,
-  acupressurePoints: any[],
+  riskResult: RiskResult,
+  acupressurePoints: AcupressureResponse[],
   db: Database.Database
 ): AnalyzeOutput {
-  // Query exercises from database for this region
-  const exercises = db.prepare(`
-    SELECT title, instructions, tags FROM exercises
-    WHERE region_id = ?
-    ORDER BY RANDOM()
-    LIMIT 3
-  `).all(input.region).map((e: any) => ({
-    ...e,
-    tags: JSON.parse(e.tags || '[]'),
-  }));
+  const exercises = selectExercises(input.region, input.painType, db);
 
   return {
+    sessionId: '',
+    createdAt: new Date().toISOString(),
     regionName,
     muscles,
     exercises,
@@ -138,10 +197,13 @@ function fallbackAnalysis(
       'Avoid movements that worsen the pain',
       'Rest the affected area between exercise sessions',
     ],
-    riskLevel,
-    warningText: WARNING_TEXT[riskLevel as RiskLevel],
+    riskLevel: riskResult.riskLevel,
+    redFlagReasons: riskResult.redFlagReasons,
+    riskSource: 'rules',
+    mlConfidence: 0,
+    warningText: WARNING_TEXT[riskResult.riskLevel],
     disclaimerText: DISCLAIMER_TEXT,
     acupressurePoints,
-    generatedBy: 'rule-based-fallback',
+    generatedBy: 'Clinical Knowledgebase',
   };
 }

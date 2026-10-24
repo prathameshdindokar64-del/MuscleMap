@@ -66,13 +66,33 @@ function TechniqueLabel({
         </p>
         <button
           type="button"
-          className="mt-2 w-full rounded-lg py-1 text-left text-[11px] font-semibold"
+          className="mt-2 flex w-full items-center justify-between rounded-lg py-1 text-left text-xs font-semibold"
           style={{ color: AMBER }}
           onClick={() => setOpen((o) => !o)}
         >
-          👆 Technique {open ? '▲' : '▼'}
+          <span>How to apply pressure</span>
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.2s',
+            }}
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
         </button>
-        {open && <p className="mt-1 text-[11px] leading-snug" style={{ color: 'var(--text-secondary)' }}>{point.technique}</p>}
+        {open && (
+          <p className="mt-1 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            {point.technique}
+          </p>
+        )}
       </div>
     </Html>
   )

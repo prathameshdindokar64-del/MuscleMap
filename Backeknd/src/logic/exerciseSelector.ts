@@ -1,9 +1,46 @@
 /**
+ * exerciseSelector.ts
  * Selects 2-3 exercises for a region based on pain type.
+ * v2: Returns id, videoSearchQuery, and guidedModeAvailable alongside the original fields.
  * EXTENSIBILITY: Replace with personalized AI recommendation when ready.
  */
 import Database from 'better-sqlite3';
 import { ExerciseResponse, ExerciseRow } from '../types';
+
+/** Prefix added to exercise titles to form a YouTube-friendly search query */
+const VIDEO_QUERY_SUFFIX = 'how to physiotherapy beginner';
+
+/** Exercises that require lying down and can't use webcam-based guided mode */
+const NON_GUIDED_EXERCISES = [
+  'Cat-Cow Stretch',
+  'Knee-to-Chest Stretch',
+  'Pelvic Tilt',
+  'Tennis Ball Self-Massage',
+  'Foam Roller Chest Opener',
+  'Foam Roller IT Band',
+  'Supine Twist',
+  'Gentle Abdominal Stretch',
+  'Diaphragmatic Breathing',
+] as const;
+
+function isGuidedAvailable(title: string): boolean {
+  return !NON_GUIDED_EXERCISES.some(
+    (noGuide) => title.toLowerCase() === noGuide.toLowerCase()
+  );
+}
+
+function toExerciseResponse(row: ExerciseRow): ExerciseResponse {
+  return {
+    id: row.id,
+    title: row.title,
+    instructions: row.instructions,
+    tags: JSON.parse(row.tags),
+    videoSearchQuery: `${row.title} ${VIDEO_QUERY_SUFFIX}`,
+    guidedModeAvailable: row.guided_mode_available === 1
+      ? true
+      : isGuidedAvailable(row.title),
+  };
+}
 
 export function selectExercises(
   regionId: string,
@@ -12,7 +49,6 @@ export function selectExercises(
 ): ExerciseResponse[] {
   // 1. Try to find exercises matching both region AND pain_type
   // Using LIKE for simple JSON array matching since pain_types is a stringified array.
-  // In a more complex scenario, JSON1 functions could be used.
   const painMatchQuery = `
     SELECT * FROM exercises 
     WHERE region_id = ? 
@@ -49,11 +85,6 @@ export function selectExercises(
     results = results.concat(fallbackExercises);
   }
 
-  // 3. Return maximum 3 exercises (already handled by limits, but we slice just in case)
-  // Format the output
-  return results.slice(0, 3).map(e => ({
-    title: e.title,
-    instructions: e.instructions,
-    tags: JSON.parse(e.tags)
-  }));
+  // 3. Return maximum 3 exercises formatted with v2 fields
+  return results.slice(0, 3).map(toExerciseResponse);
 }

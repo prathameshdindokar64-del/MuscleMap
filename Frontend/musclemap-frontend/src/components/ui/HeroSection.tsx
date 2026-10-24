@@ -64,14 +64,15 @@ export function HeroSection() {
             }}
           >
             <p
-              className="mb-4 inline-block rounded-full px-4 py-1 text-xs font-semibold tracking-wide"
+              className="mb-5 inline-block rounded-full px-5 py-1.5 text-xs font-semibold tracking-wide uppercase"
               style={{
                 background: 'var(--glass-bg-strong)',
                 border: '1px solid var(--glass-border-accent)',
                 color: 'var(--text-accent)',
+                letterSpacing: '0.08em',
               }}
             >
-              AI-Powered · Acupressure · Anatomy
+              AI-Powered Pain Assessment
             </p>
             <h1 className="text-3xl font-extrabold leading-tight md:text-5xl" style={{ color: 'var(--text-primary)' }}>
               Understand Your
@@ -80,23 +81,24 @@ export function HeroSection() {
               <br />
               Heal Smarter.
             </h1>
-            <p className="mx-auto mt-5 max-w-md text-sm leading-relaxed md:text-base" style={{ color: 'var(--text-secondary)' }}>
-              Click any region on the 3D anatomy model to identify affected muscles, get AI-guided exercises, and discover acupressure points for
-              natural pain relief.
+            <p className="mx-auto mt-6 max-w-md text-base leading-relaxed md:text-lg" style={{ color: 'var(--text-secondary)' }}>
+              Click any region on the 3D body model to identify muscles,
+              get personalized exercises, and find acupressure points
+              for natural relief.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <button
                 type="button"
                 onClick={startAssessment}
-                className="glass-accent w-full rounded-full px-8 py-3 text-sm font-semibold sm:w-auto"
+                className="glass-accent w-full rounded-full px-8 py-3.5 text-base font-semibold sm:w-auto"
                 style={{ color: theme === 'dark' ? '#f8fafc' : 'var(--text-primary)' }}
               >
-                Start Assessment →
+                Start Assessment
               </button>
               <a
                 href="#about"
                 onClick={scrollToAbout}
-                className="glass w-full rounded-full px-8 py-3 text-center text-sm font-semibold sm:w-auto"
+                className="glass w-full rounded-full px-8 py-3.5 text-center text-base font-semibold sm:w-auto"
                 style={{ color: 'var(--text-secondary)', borderColor: 'var(--glass-border)' }}
               >
                 Learn More
@@ -104,10 +106,12 @@ export function HeroSection() {
             </div>
           </div>
           <div
-            className="pointer-events-none absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-xs"
+            className="pointer-events-none absolute bottom-8 left-1/2 flex -translate-x-1/2 flex-col items-center gap-2 text-sm"
             style={{ color: 'var(--text-muted)' }}
           >
-            <span className="animate-bounce text-lg">↓</span>
+            <svg className="animate-bounce" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
             <span>Scroll to explore</span>
           </div>
         </div>
@@ -116,10 +120,13 @@ export function HeroSection() {
         <button
           type="button"
           onClick={restoreHero}
-          className="glass fixed bottom-24 left-4 z-20 rounded-full px-4 py-2 text-xs font-medium shadow-lg"
+          className="glass fixed bottom-24 left-4 z-20 flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium shadow-lg"
           style={{ color: 'var(--text-primary)', borderColor: 'var(--glass-border-accent)' }}
         >
-          ← Back to top
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="18 15 12 9 6 15" />
+          </svg>
+          Back to top
         </button>
       )}
     </>

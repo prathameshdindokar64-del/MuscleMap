@@ -19,7 +19,8 @@ export function validateBody(schema: ZodSchema) {
       next();
     } catch (err: any) {
       if (err instanceof ZodError) {
-        const details = (err as any).errors.map((e: any) => `${e.path.join('.')}: ${e.message}`);
+        const issues = (err as any).issues || (err as any).errors || [];
+        const details = issues.map((e: any) => `${e.path.join('.')}: ${e.message}`);
         res.status(400).json({ error: 'Validation failed', details });
         return;
       }
@@ -42,7 +43,8 @@ export function validateQuery(schema: ZodSchema) {
       next();
     } catch (err: any) {
       if (err instanceof ZodError) {
-        const details = (err as any).errors.map((e: any) => `${e.path.join('.')}: ${e.message}`);
+        const issues = (err as any).issues || (err as any).errors || [];
+        const details = issues.map((e: any) => `${e.path.join('.')}: ${e.message}`);
         res.status(400).json({ error: 'Validation failed', details });
         return;
       }

@@ -1,5 +1,6 @@
 /**
- * Risk level thresholds and rules.
+ * riskRules.ts
+ * Risk level thresholds, red-flag triggers, and moderate-risk boosters.
  * Defines the constants used by the risk calculator to determine severity.
  * EXTENSIBILITY: These thresholds can be loaded from DB or config when AI tuning is added.
  */
@@ -27,3 +28,24 @@ export const RED_FLAG_PAIN_TYPES = ['numbness'] as const;
 
 /** Regions where sharp pain is a red flag */
 export const RED_FLAG_SHARP_REGIONS = ['chest'] as const;
+
+// ─── v2 Red-Flag Triggers ───────────────────────────────────────────
+
+/** Night pain above this intensity triggers a red flag */
+export const NIGHT_PAIN_RED_FLAG_INTENSITY = 6;
+
+/** Regions where fever combined with pain triggers a red flag */
+export const FEVER_RED_FLAG_REGIONS = [
+  'neck', 'lower_back', 'upper_back',
+] as const;
+
+// ─── v2 Moderate-Risk Boosters ──────────────────────────────────────
+
+/** Daily sitting hours above this threshold boost risk for back/neck/hip */
+export const HIGH_SITTING_HOURS_THRESHOLD = 8;
+
+/** Regions where prolonged sitting boosts risk */
+export const SITTING_RISK_REGIONS = [
+  'neck', 'lower_back', 'upper_back',
+  'left_hip', 'right_hip',
+] as const;

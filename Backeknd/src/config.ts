@@ -27,7 +27,8 @@ export const config = {
   // EXTENSIBILITY: DATABASE_URL will be added here when migrating to PostgreSQL
 } as const;
 
-// ── AI / Auth flat exports (used by middleware and logic files) ──────
 export const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ''
 export const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-in-production'
 export const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d'
+export const ML_SERVICE_URL = process.env.ML_SERVICE_URL || 'http://localhost:5001'
+export const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || ''

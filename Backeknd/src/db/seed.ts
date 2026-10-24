@@ -118,31 +118,79 @@ const EXERCISES: ExerciseSeed[] = [
   { region_id: 'right_wrist', title: 'Grip Strengthener', instructions: 'Squeeze a soft ball with your right hand. Hold 5 seconds, release. Repeat 10 times for 2 sets.', tags: ['Strengthening','Beginner','Stability'], pain_types: ['dull','stiffness'], difficulty: 'beginner', duration_min: 4 },
 ];
 
+// ─── v2: Acupressure Points for the DB table ───────────────────────
+interface AcupressureSeed {
+  id: string;
+  region_id: string;
+  name: string;
+  location: string;
+  how_to: string;
+}
+
+const ACUPRESSURE_SEEDS: AcupressureSeed[] = [
+  // Neck
+  { id: 'acu-neck-gb21', region_id: 'neck', name: 'Jianjing (GB21)', location: 'Midpoint between the base of the neck and the top of the shoulder.', how_to: 'Press firmly downward with your thumb for 30–60 seconds while breathing slowly. Repeat on both sides.' },
+  { id: 'acu-neck-bl10', region_id: 'neck', name: 'Tianzhu (BL10)', location: 'About one finger-width below the base of the skull, on either side of the spine.', how_to: 'Press inward and slightly upward with both thumbs simultaneously for 60 seconds. Breathe deeply.' },
+  // Shoulders
+  { id: 'acu-lshoulder-li15', region_id: 'left_shoulder', name: 'Jianyu (LI15)', location: 'Depression at the front of the shoulder joint when arm is raised sideways.', how_to: 'Press gently into the hollow with your thumb for 30 seconds. Release and repeat 3 times.' },
+  { id: 'acu-rshoulder-li15', region_id: 'right_shoulder', name: 'Jianyu (LI15)', location: 'Depression at the front of the shoulder joint when arm is raised sideways.', how_to: 'Press gently into the hollow with your thumb for 30 seconds. Release and repeat 3 times.' },
+  // Upper Back
+  { id: 'acu-uback-bl13', region_id: 'upper_back', name: 'Feishu (BL13)', location: 'About two finger-widths on either side of the spine at shoulder blade level.', how_to: 'Apply gentle pressure with both thumbs simultaneously for 60 seconds while breathing deeply.' },
+  { id: 'acu-uback-si11', region_id: 'upper_back', name: 'Tianzong (SI11)', location: 'Center of the shoulder blade in the depression.', how_to: 'Press firmly with a tennis ball against a wall for 30–60 seconds. Move gently to find tender spots.' },
+  // Lower Back
+  { id: 'acu-lback-bl23', region_id: 'lower_back', name: 'Shenshu (BL23)', location: 'About two finger-widths on either side of the spine at waist level.', how_to: 'Place thumbs on both sides of the spine at waist height. Press firmly for 60 seconds. Repeat twice.' },
+  { id: 'acu-lback-bl40', region_id: 'lower_back', name: 'Weizhong (BL40)', location: 'Center of the crease behind the knee.', how_to: 'Press firmly into the center of the back of the knee for 30 seconds per side. Great for acute lower back spasm.' },
+  { id: 'acu-lback-du4', region_id: 'lower_back', name: 'Mingmen (DU4)', location: 'On the spine directly behind the belly button.', how_to: 'Press gently with your thumb for 30–60 seconds while standing or seated. Supports lower back warmth.' },
+  // Knees
+  { id: 'acu-lknee-st36', region_id: 'left_knee', name: 'Zusanli (ST36)', location: 'About four finger-widths below the kneecap, one finger-width to the outer side of the shinbone.', how_to: 'Press with your thumb for 30–60 seconds. A feeling of mild aching is normal. Repeat on both sides.' },
+  { id: 'acu-rknee-st36', region_id: 'right_knee', name: 'Zusanli (ST36)', location: 'About four finger-widths below the kneecap, one finger-width to the outer side of the shinbone.', how_to: 'Press with your thumb for 30–60 seconds. A feeling of mild aching is normal. Repeat on both sides.' },
+  // Hips
+  { id: 'acu-lhip-gb30', region_id: 'left_hip', name: 'Huantiao (GB30)', location: 'In the center of the buttock, roughly one-third of the way from the hip bone to the tailbone.', how_to: 'Apply deep firm pressure with a tennis ball (lie on it) for 60 seconds. Breathe through any tenderness.' },
+  { id: 'acu-rhip-gb30', region_id: 'right_hip', name: 'Huantiao (GB30)', location: 'In the center of the buttock, roughly one-third of the way from the hip bone to the tailbone.', how_to: 'Apply deep firm pressure with a tennis ball (lie on it) for 60 seconds. Breathe through any tenderness.' },
+  // Chest
+  { id: 'acu-chest-cv17', region_id: 'chest', name: 'Shanzhong (CV17)', location: 'Center of the breastbone, at heart level.', how_to: 'Press gently on the sternum with your finger for 60 seconds while breathing slowly and deeply.' },
+  // Wrists
+  { id: 'acu-lwrist-pc6', region_id: 'left_wrist', name: 'Neiguan (PC6)', location: 'About three finger-widths above the wrist crease on the inner forearm, between the two tendons.', how_to: 'Press with your thumb for 30 seconds. Helps with wrist pain and general tension. Repeat 3 times.' },
+  { id: 'acu-rwrist-pc6', region_id: 'right_wrist', name: 'Neiguan (PC6)', location: 'About three finger-widths above the wrist crease on the inner forearm, between the two tendons.', how_to: 'Press with your thumb for 30 seconds. Helps with wrist pain and general tension. Repeat 3 times.' },
+];
+
 function seed(): void {
   const db = initializeDatabase();
   runSchema(db);
 
-  // Check if data already exists
+  // Check if base data already exists
   const count = db.prepare('SELECT COUNT(*) as count FROM regions').get() as { count: number };
   if (count.count > 0) {
-    console.log('Seed data already exists. Skipping.');
-    return;
+    console.log('Seed data already exists. Checking acupressure...');
+  } else {
+    const insertRegion = db.prepare('INSERT INTO regions (id, name, description) VALUES (?, ?, ?)');
+    const insertExercise = db.prepare('INSERT INTO exercises (id, region_id, title, instructions, tags, pain_types, difficulty, duration_min) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+
+    const seedBase = db.transaction(() => {
+      for (const r of REGIONS) {
+        insertRegion.run(r.id, r.name, r.description);
+      }
+      for (const e of EXERCISES) {
+        insertExercise.run(uuidv4(), e.region_id, e.title, e.instructions, JSON.stringify(e.tags), JSON.stringify(e.pain_types), e.difficulty, e.duration_min);
+      }
+    });
+
+    seedBase();
+    console.log(`Seeded ${REGIONS.length} regions and ${EXERCISES.length} exercises.`);
   }
 
-  const insertRegion = db.prepare('INSERT INTO regions (id, name, description) VALUES (?, ?, ?)');
-  const insertExercise = db.prepare('INSERT INTO exercises (id, region_id, title, instructions, tags, pain_types, difficulty, duration_min) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-
-  const seedAll = db.transaction(() => {
-    for (const r of REGIONS) {
-      insertRegion.run(r.id, r.name, r.description);
-    }
-    for (const e of EXERCISES) {
-      insertExercise.run(uuidv4(), e.region_id, e.title, e.instructions, JSON.stringify(e.tags), JSON.stringify(e.pain_types), e.difficulty, e.duration_min);
+  // v2: Seed acupressure points (safe to re-run with INSERT OR IGNORE)
+  const insertAcupressure = db.prepare(
+    'INSERT OR IGNORE INTO acupressure_points (id, region_id, name, location, how_to) VALUES (?, ?, ?, ?, ?)'
+  );
+  const seedAcupressure = db.transaction(() => {
+    for (const ap of ACUPRESSURE_SEEDS) {
+      insertAcupressure.run(ap.id, ap.region_id, ap.name, ap.location, ap.how_to);
     }
   });
-
-  seedAll();
-  console.log(`Seeded ${REGIONS.length} regions and ${EXERCISES.length} exercises.`);
+  seedAcupressure();
+  console.log(`Seeded ${ACUPRESSURE_SEEDS.length} acupressure points (INSERT OR IGNORE).`);
 }
 
 seed();
+

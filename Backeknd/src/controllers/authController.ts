@@ -66,7 +66,7 @@ export async function login(req: Request, res: Response) {
     }
 
     // Update last login
-    db.prepare('UPDATE users SET last_login = datetime("now") WHERE id = ?').run(user.id);
+    db.prepare("UPDATE users SET last_login = datetime('now') WHERE id = ?").run(user.id);
 
     const token = jwt.sign({ userId: user.id, email: user.email }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN } as any);
 
@@ -75,9 +75,9 @@ export async function login(req: Request, res: Response) {
       token,
       user: { id: user.id, email: user.email, name: user.name },
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Login error:', error);
-    return res.status(500).json({ error: 'Login failed' });
+    return res.status(500).json({ error: 'Login failed', details: error?.message || String(error) });
   }
 }
 

@@ -1,160 +1,167 @@
 /**
  * AboutSection.tsx
- * Full landing-style about content below the scroll experience, using glass cards.
+ * Comprehensive educational overview below the 3D canvas.
+ * Clean, clinical aesthetics with zero emojis and humanized medical guidance.
  */
 import { useTheme } from '../../context/ThemeContext'
 
-const FEATURES = [
-  {
-    icon: '🫀',
-    title: '3D Anatomy Visualization',
-    body: 'Explore a detailed human muscle model. Click any region to identify the exact muscles involved in your pain.',
-  },
-  {
-    icon: '🤖',
-    title: 'AI-Powered Analysis',
-    body: 'Our AI analyzes your pain profile and generates personalized exercise routines and acupressure guidance.',
-  },
-  {
-    icon: '📊',
-    title: 'Pain Tracking',
-    body: 'Track your pain history over time with visual charts. See patterns and monitor your recovery progress.',
-  },
-] as const
-
-const STEPS = [
-  {
-    n: '01',
-    title: 'Select Your Pain Area',
-    body: 'Rotate and zoom the 3D body model. Click the exact region where you feel pain. The model highlights the affected area.',
-  },
-  {
-    n: '02',
-    title: 'Describe Your Pain',
-    body: 'Answer a short questionnaire about pain type, duration, intensity, and possible triggers. Takes less than 60 seconds.',
-  },
-  {
-    n: '03',
-    title: 'Get AI Guidance',
-    body: 'Receive personalized exercise recommendations, acupressure point locations, and risk assessment powered by Google Gemini AI.',
-  },
-  {
-    n: '04',
-    title: 'Track & Improve',
-    body: 'Save your assessments and track pain patterns over time. Export full reports as PDF for your healthcare provider.',
-  },
-] as const
-
-const AUDIENCE = [
-  { title: 'Office Workers', body: 'Neck, shoulder, and lower back pain from long hours at a desk' },
-  { title: 'Fitness Enthusiasts', body: 'Post-workout muscle soreness and overuse injury prevention' },
-  { title: 'Anyone in Pain', body: 'Quick self-assessment before deciding whether to see a doctor' },
-  { title: 'Healthcare Students', body: 'Learn muscle anatomy through interactive 3D exploration' },
-] as const
-
-/**
- * About MuscleMap sections with glassmorphism layout.
- */
 export function AboutSection() {
   const { theme } = useTheme()
-  const sectionTint = theme === 'dark' ? 'rgba(2,2,7,0.95)' : 'rgba(232,244,251,0.95)'
+  const isDark = theme === 'dark'
+  const sectionTint = isDark ? 'rgba(2, 6, 23, 0.96)' : 'rgba(248, 250, 252, 0.98)'
 
   return (
     <section
       id="about"
-      className="relative z-[2] px-4 py-[120px] md:px-10"
+      className="relative z-[2] px-6 py-24 md:px-12"
       style={{
         background: sectionTint,
         pointerEvents: 'auto',
         color: 'var(--text-primary)',
       }}
     >
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-5xl">
+        {/* Header */}
         <div className="text-center">
           <span
-            className="inline-block rounded-full px-4 py-1 text-xs font-bold"
-            style={{ background: 'var(--glass-bg)', border: '1px solid var(--glass-border-accent)', color: 'var(--text-accent)' }}
+            className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-semibold uppercase tracking-wider"
+            style={{
+              background: 'var(--glass-bg)',
+              border: '1px solid var(--glass-border-accent)',
+              color: 'var(--text-accent)',
+            }}
           >
-            About MuscleMap
+            Clinical Self-Care Resource
           </span>
-          <h2 className="mt-6 text-3xl font-bold md:text-4xl">Your Personal Muscle Health Companion</h2>
-          <p className="mx-auto mt-4 max-w-3xl text-lg" style={{ color: 'var(--text-secondary)' }}>
-            MuscleMap combines interactive 3D anatomy, AI-powered analysis, and traditional acupressure knowledge to help you understand and manage
-            muscle pain from the comfort of your home.
+          <h2 className="mt-5 text-3xl font-extrabold tracking-tight md:text-4xl">
+            Thoughtful Muscle Health & Mobility Guidance
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base leading-relaxed md:text-lg" style={{ color: 'var(--text-secondary)' }}>
+            MuscleMap bridges full 3D human anatomy, structured symptom evaluation, and traditional acupressure points to help you understand tension patterns and safely support your mobility.
           </p>
         </div>
 
+        {/* 3 Pillars */}
         <div className="mt-14 grid gap-6 md:grid-cols-3">
-          {FEATURES.map((f) => (
-            <article key={f.title} className="glass rounded-2xl p-6 text-left">
-              <div className="text-3xl">{f.icon}</div>
-              <h3 className="mt-3 text-lg font-semibold">{f.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                {f.body}
-              </p>
-            </article>
-          ))}
+          <article className="glass rounded-2xl p-7 text-left">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
+              style={{ background: 'var(--accent-glow)', color: 'var(--text-accent)' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 7.65l.77.78L12 21.01l7.65-7.65.77-.78a5.4 5.4 0 0 0 0-7.65z" />
+              </svg>
+            </div>
+            <h3 className="mt-4 text-lg font-bold">Interactive Anatomy</h3>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Explore deep and superficial muscle groups. Tap any region to inspect involved anatomical structures and pinpoint where strain originates.
+            </p>
+          </article>
+
+          <article className="glass rounded-2xl p-7 text-left">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
+              style={{ background: 'var(--accent-glow)', color: 'var(--text-accent)' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7z" />
+                <line x1="9" y1="21" x2="15" y2="21" />
+              </svg>
+            </div>
+            <h3 className="mt-4 text-lg font-bold">Structured Guidance</h3>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Answer straightforward questions about pain type and intensity to receive gentle mobility routines, posture suggestions, and acupressure points.
+            </p>
+          </article>
+
+          <article className="glass rounded-2xl p-7 text-left">
+            <div
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
+              style={{ background: 'var(--accent-glow)', color: 'var(--text-accent)' }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 3v18h18" />
+                <path d="m19 9-5 5-4-4-3 3" />
+              </svg>
+            </div>
+            <h3 className="mt-4 text-lg font-bold">Progress Tracking</h3>
+            <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              Log checkups over time. Review visual pain logs and generate clean summary reports you can easily share with your physical therapist or physician.
+            </p>
+          </article>
         </div>
 
-        <h2 className="mt-24 text-center text-3xl font-bold">How It Works</h2>
-        <div className="mt-12 space-y-10">
-          {STEPS.map((step, i) => (
-            <div
-              key={step.n}
-              className={`flex flex-col gap-4 md:flex-row md:items-center ${i % 2 === 1 ? 'md:flex-row-reverse' : ''}`}
-            >
-              <div
-                className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl text-xl font-black"
+        {/* Step-by-Step Walkthrough */}
+        <h3 className="mt-20 text-center text-2xl font-bold md:text-3xl">How It Works</h3>
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            {
+              n: '1',
+              title: 'Locate Your Discomfort',
+              desc: 'Select the area where you feel stiffness or soreness on the 3D model.',
+            },
+            {
+              n: '2',
+              title: 'Answer Key Questions',
+              desc: 'Select pain intensity, duration, and whether physical strain or stress contributed.',
+            },
+            {
+              n: '3',
+              title: 'Review Self-Care Steps',
+              desc: 'Get targeted gentle stretches, posture adjustments, and acupressure instructions.',
+            },
+            {
+              n: '4',
+              title: 'Monitor Recovery',
+              desc: 'Track changes over time with visual history logs and optional PDF export.',
+            },
+          ].map((step) => (
+            <div key={step.n} className="glass rounded-2xl p-6 text-left">
+              <span
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold"
                 style={{
-                  background: 'var(--accent-glow)',
-                  color: 'var(--text-accent)',
-                  border: '1px solid var(--glass-border-accent)',
+                  background: 'var(--accent)',
+                  color: '#ffffff',
                 }}
               >
                 {step.n}
-              </div>
-              <div className="glass flex-1 rounded-2xl p-6">
-                <h3 className="text-xl font-semibold">{step.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                  {step.body}
-                </p>
-              </div>
+              </span>
+              <h4 className="mt-4 text-base font-bold">{step.title}</h4>
+              <p className="mt-1.5 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                {step.desc}
+              </p>
             </div>
           ))}
         </div>
 
-        <h2 className="mt-24 text-center text-3xl font-bold">Who Is MuscleMap For?</h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          {AUDIENCE.map((a) => (
-            <article key={a.title} className="glass rounded-2xl p-6">
-              <h3 className="text-lg font-semibold">{a.title}</h3>
-              <p className="mt-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
-                {a.body}
-              </p>
-            </article>
-          ))}
-        </div>
-
+        {/* Medical Disclaimer */}
         <div
-          className="glass mt-20 rounded-2xl border p-8"
+          className="mt-16 rounded-2xl p-7 border"
           style={{
-            background: 'var(--disclaimer-bg)',
-            borderColor: 'var(--disclaimer-border)',
-            color: 'var(--disclaimer-text)',
+            background: isDark ? 'rgba(30, 41, 59, 0.4)' : 'rgba(241, 245, 249, 0.9)',
+            borderColor: 'var(--glass-border-accent)',
           }}
         >
-          <h3 className="flex items-center gap-2 text-lg font-bold">⚠️ Important Medical Disclaimer</h3>
-          <p className="mt-4 text-sm leading-relaxed">
-            MuscleMap is an educational tool designed to provide general information about muscle anatomy and self-care techniques. It is NOT a
-            substitute for professional medical advice, diagnosis, or treatment.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed">
-            Always consult a qualified healthcare professional for persistent, severe, or worsening pain. If you experience chest pain, numbness,
-            weakness, or loss of bladder/bowel control — seek emergency medical attention immediately.
-          </p>
-          <p className="mt-3 text-sm leading-relaxed">
-            The AI-generated recommendations are for informational purposes only and should not replace medical consultation.
-          </p>
+          <div className="flex items-start gap-3.5">
+            <span className="mt-0.5 shrink-0 text-amber-500">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </span>
+            <div className="space-y-2 text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+              <h4 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                Important Health & Safety Notice
+              </h4>
+              <p>
+                MuscleMap is an educational resource intended to support personal wellness, anatomical learning, and self-care routines. It does not provide medical diagnoses or replace clinical examination by a licensed medical practitioner.
+              </p>
+              <p>
+                If your discomfort is severe, sudden, radiates to your chest or jaw, causes shortness of breath, or is accompanied by numbness or weakness, please seek emergency medical attention right away.
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     </section>

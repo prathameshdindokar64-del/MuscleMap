@@ -5,7 +5,7 @@
  * EXTENSIBILITY: This is the single entry point — swap internals without changing the API contract.
  */
 import Database from 'better-sqlite3';
-import { AnalyzeInput, AnalyzeOutput } from '../types';
+import { AnalyzeInput, AnalyzeOutput, AcupressureResponse } from '../types';
 import { REGION_MUSCLES, REGION_NAMES } from '../constants/regions';
 import { calculateRisk } from './riskCalculator';
 import { selectExercises } from './exerciseSelector';
@@ -16,14 +16,39 @@ export function analyzePain(input: AnalyzeInput, db: Database.Database): Analyze
   const regionName = REGION_NAMES[input.region] || input.region;
   const muscles = REGION_MUSCLES[input.region] ?? ['See a professional for assessment'];
 
-  const riskLevel = calculateRisk(input);
+  const riskResult = calculateRisk(input);
   const exercises = selectExercises(input.region, input.painType, db);
-  const acupressurePoints = ACUPRESSURE_POINTS[input.region] ?? [];
 
-  const warningText = WARNING_TEXT[riskLevel];
+  let acupressurePoints: AcupressureResponse[] = [];
+  try {
+    const rows = db.prepare(
+      'SELECT name, location, how_to FROM acupressure_points WHERE region_id = ?'
+    ).all(input.region) as { name: string; location: string; how_to: string }[];
+    if (rows && rows.length > 0) {
+      acupressurePoints = rows.map((r) => ({
+        name: r.name,
+        location: r.location,
+        howTo: r.how_to,
+      }));
+    }
+  } catch {
+    // fallback if table not yet migrated
+  }
+
+  if (acupressurePoints.length === 0) {
+    acupressurePoints = (ACUPRESSURE_POINTS[input.region] ?? []).map((p) => ({
+      name: p.name,
+      location: p.description,
+      howTo: p.technique,
+    }));
+  }
+
+  const warningText = WARNING_TEXT[riskResult.riskLevel];
   const disclaimerText = DISCLAIMER_TEXT;
 
   return {
+    sessionId: '',
+    createdAt: new Date().toISOString(),
     regionName,
     muscles,
     exercises,
@@ -33,7 +58,10 @@ export function analyzePain(input: AnalyzeInput, db: Database.Database): Analyze
       'Avoid movements that worsen the pain',
       'Rest the affected area between exercise sessions',
     ],
-    riskLevel,
+    riskLevel: riskResult.riskLevel,
+    redFlagReasons: riskResult.redFlagReasons,
+    riskSource: 'rules',
+    mlConfidence: 0,
     warningText,
     disclaimerText,
     acupressurePoints,
